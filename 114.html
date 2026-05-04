@@ -3,31 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>不分類資源班點名系統</title>
+    <title>民生國中 | 資源班點名系統</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* 高質感配色與變數定義 */
+        /* 清晰高對比配色與變數定義 */
         :root {
-            --bg-color: #F7F9FC;
-            --surface: #FFFFFF;
-            --primary: #2563EB;
-            --primary-hover: #1D4ED8;
-            --text-main: #1E293B;
-            --text-muted: #64748B;
-            --border: #E2E8F0;
+            --bg-color: #F1F5F9;          /* 清爽淺灰藍背景，突顯純白卡片 */
+            --surface: #FFFFFF;           /* 卡片純白底 */
+            --primary: #3B82F6;           /* 鮮明的主按鈕藍色 */
+            --primary-hover: #2563EB;
+            --text-main: #0F172A;         /* 極深灰黑，極高閱讀性 */
+            --text-muted: #475569;        /* 清楚的次要灰色 */
+            --border: #CBD5E1;            /* 明確的邊線分隔 */
+            --th-bg: #E2E8F0;             /* 表格標題底色，與白底產生對比 */
             
-            /* 狀態顏色更新：預設為出席(綠)，缺席(紅)，遲到(橘) */
-            --state-present-bg: #DCFCE7;
-            --state-present-text: #166534;
-            --state-present-border: #22C55E;
+            /* 狀態顏色：高飽和度、高對比，一眼辨識 */
+            --state-present-bg: #E6F4EA;
+            --state-present-text: #137333;
+            --state-present-border: #1E8E3E; /* 清晰標準綠 */
             
-            --state-absent-bg: #FEE2E2;
-            --state-absent-text: #991B1B;
-            --state-absent-border: #EF4444;
+            --state-absent-bg: #FCE8E6;
+            --state-absent-text: #B31412;
+            --state-absent-border: #D93025; /* 清晰警戒紅 */
 
-            --state-late-bg: #FEF3C7;
-            --state-late-text: #92400E;
-            --state-late-border: #F59E0B;
+            --state-late-bg: #FEF7E0;
+            --state-late-text: #B06000;
+            --state-late-border: #F9AB00; /* 清晰鮮明橘黃 */
         }
 
         body {
@@ -40,7 +41,7 @@
 
         /* 導覽列 */
         header {
-            background-color: rgba(255, 255, 255, 0.8);
+            background-color: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             padding: 16px 40px;
@@ -51,6 +52,7 @@
             position: sticky;
             top: 0;
             z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .header-title {
@@ -62,11 +64,12 @@
 
         .school-name {
             font-size: 0.9rem;
-            font-weight: 500;
+            font-weight: 600;
             color: var(--text-muted);
             background: var(--bg-color);
             padding: 6px 12px;
             border-radius: 20px;
+            border: 1px solid var(--border);
         }
 
         /* 標籤切換 */
@@ -82,6 +85,7 @@
             margin-left: auto;
             margin-right: auto;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
         }
 
         .tab-btn {
@@ -91,15 +95,19 @@
             padding: 10px 30px;
             border-radius: 24px;
             font-size: 1rem;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
         }
 
+        .tab-btn:hover {
+            color: var(--text-main);
+        }
+
         .tab-btn.active {
-            background: var(--text-main);
+            background: var(--primary);
             color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
         }
 
         /* 內容容器與卡片 */
@@ -113,24 +121,24 @@
             background: var(--surface);
             border-radius: 24px;
             padding: 40px;
-            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.1);
             display: none;
-            border: 1px solid rgba(255,255,255,0.5);
+            border: 1px solid var(--border);
         }
 
         .card.active {
             display: block;
-            animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: fadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(15px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         /* 資訊區塊 (時間與週次) */
         .info-panel {
-            background: #F8FAFC;
+            background: var(--bg-color);
             border-radius: 16px;
             padding: 20px;
             margin-bottom: 30px;
@@ -149,14 +157,14 @@
         .info-label {
             font-size: 0.8rem;
             color: var(--text-muted);
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
         }
 
         .info-value {
             font-size: 1.1rem;
             font-weight: 700;
-            color: var(--primary);
+            color: var(--primary-hover);
         }
 
         /* 表單元素 */
@@ -170,24 +178,25 @@
         .form-group label {
             display: block;
             margin-bottom: 8px;
-            font-size: 0.9rem;
-            font-weight: 600;
+            font-size: 0.95rem;
+            font-weight: 700;
             color: var(--text-main);
         }
 
         select {
             width: 100%;
             padding: 14px 16px;
-            border: 1px solid var(--border);
+            border: 2px solid var(--border);
             border-radius: 12px;
             font-size: 1rem;
+            font-weight: 500;
             font-family: inherit;
             background: var(--surface);
             color: var(--text-main);
             transition: all 0.2s;
             cursor: pointer;
             appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
             background-repeat: no-repeat;
             background-position: right 16px center;
             background-size: 16px;
@@ -196,7 +205,7 @@
         select:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
 
         /* 點名區塊與圖例 */
@@ -211,19 +220,20 @@
 
         .legend {
             display: flex;
-            gap: 12px;
-            font-size: 0.85rem;
-            font-weight: 500;
+            gap: 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
         }
 
         .legend-item {
             display: flex;
             align-items: center;
             gap: 6px;
+            color: var(--text-main);
         }
 
         .dot {
-            width: 10px; height: 10px; border-radius: 50%;
+            width: 12px; height: 12px; border-radius: 50%;
         }
 
         .dot.present { background: var(--state-present-border); }
@@ -241,13 +251,14 @@
         .student-btn {
             padding: 16px 10px;
             border-radius: 12px;
-            font-size: 1.05rem;
-            font-weight: 600;
+            font-size: 1.1rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.15s ease;
             text-align: center;
             border: 2px solid;
             user-select: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
         /* 狀態 0: 出席 (預設) */
@@ -261,14 +272,16 @@
             background-color: var(--state-absent-bg);
             border-color: var(--state-absent-border);
             color: var(--state-absent-text);
-            transform: scale(0.98);
+            transform: scale(0.96);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         }
         /* 狀態 2: 遲到 */
         .student-btn[data-state="2"] {
             background-color: var(--state-late-bg);
             border-color: var(--state-late-border);
             color: var(--state-late-text);
-            transform: scale(0.98);
+            transform: scale(0.96);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         }
 
         /* 送出按鈕 */
@@ -280,17 +293,17 @@
             padding: 18px;
             border-radius: 16px;
             font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 700;
             margin-top: 40px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             display: none;
         }
 
         .submit-btn:hover {
-            background: #000;
+            background: #000000;
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
         }
 
         /* 缺席紀錄表格 */
@@ -298,7 +311,7 @@
             overflow-x: auto;
             margin-top: 20px;
             border-radius: 12px;
-            border: 1px solid var(--border);
+            border: 2px solid var(--border);
         }
 
         table {
@@ -313,37 +326,46 @@
             text-align: center;
             border-bottom: 1px solid var(--border);
             border-right: 1px solid var(--border);
+            vertical-align: top;
         }
         
         th:last-child, td:last-child { border-right: none; }
         tr:last-child td { border-bottom: none; }
 
         th {
-            background: #F8FAFC;
-            color: var(--text-muted);
-            font-weight: 600;
-            font-size: 0.9rem;
+            background: var(--th-bg);
+            color: var(--text-main);
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+        
+        /* 節次直行底色 (和星期一到五同色) */
+        #recordsTable td:first-child {
+            background: var(--th-bg);
+            color: var(--text-main);
+            font-weight: 700;
+            vertical-align: middle;
         }
 
-        .status-all { color: var(--state-present-border); font-weight: 600; font-size: 0.9rem; }
-        .status-issue { color: var(--text-main); font-size: 0.85rem; line-height: 1.5; text-align: left; display: inline-block;}
-        .highlight-late { color: var(--state-late-border); font-weight: 600;}
-        .highlight-absent { color: #EF4444; font-weight: 600;}
+        .status-all { color: var(--state-present-border); font-weight: 700; font-size: 0.95rem; }
+        .status-issue { color: var(--text-main); font-size: 0.9rem; line-height: 1.5; text-align: left; display: inline-block; font-weight: 600;}
+        .highlight-late { color: var(--state-late-text); font-weight: 700;}
+        .highlight-absent { color: var(--state-absent-text); font-weight: 700;}
 
         /* 載入中遮罩 */
         #loadingOverlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,255,255,0.7);
+            background: rgba(241, 245, 249, 0.85);
             backdrop-filter: blur(4px);
             display: none; justify-content: center; align-items: center;
-            z-index: 1000; font-size: 1.2rem; font-weight: 600; color: var(--primary);
+            z-index: 1000; font-size: 1.2rem; font-weight: 700; color: var(--primary);
         }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="header-title">資源班點名系統</div>
+        <div class="header-title">不分類資源班點名系統</div>
         <div class="school-name">嘉義市民生國中</div>
     </header>
 
@@ -357,7 +379,7 @@
             
             <div class="info-panel">
                 <div class="info-item">
-                    <span class="info-label">當下日期與時間</span>
+                    <span class="info-label">日期與時間</span>
                     <span class="info-value" id="datetimeDisplay">載入中...</span>
                 </div>
                 <div class="info-item" style="text-align: right;">
@@ -379,7 +401,7 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>選擇課程 (自動跳出)</label>
+                    <label>選擇課程 (自動判定)</label>
                     <select id="rcClass" onchange="renderStudents()">
                         <option value="">請先選擇教師...</option>
                     </select>
@@ -388,15 +410,15 @@
 
             <div id="attendanceSection" style="display: none;">
                 <div class="attendance-header">
-                    <div id="courseInfo" style="font-weight:700; font-size:1.1rem; color:var(--primary);"></div>
+                    <div id="courseInfo" style="font-weight:700; font-size:1.1rem; color:var(--primary-hover);"></div>
                     <div class="legend">
                         <div class="legend-item"><div class="dot present"></div>出席(未按)</div>
-                        <div class="legend-item"><div class="dot absent"></div>缺席(1次)</div>
-                        <div class="legend-item"><div class="dot late"></div>遲到(2次)</div>
+                        <div class="legend-item"><div class="dot absent"></div>缺席(按第1次)</div>
+                        <div class="legend-item"><div class="dot late"></div>遲到(按第2次)</div>
                     </div>
                 </div>
-                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
-                    操作提示：預設為出席，點擊按鈕切換狀態 (1次:缺席 → 2次:遲到 → 3次:取消選取/出席)
+                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px; font-weight: 500;">
+                    操作提示：預設為出席，點擊按鈕切換狀態 (1次:缺席 → 2次:遲到 → 3次:取消選取)
                 </div>
                 <div id="studentsArea" class="students-grid"></div>
                 <button class="submit-btn" id="submitBtn" onclick="submitRollCall()">送出點名紀錄</button>
@@ -412,6 +434,7 @@
                 <div class="form-group">
                     <label>選擇組別</label>
                     <select id="recGroup" onchange="fetchRecords()">
+                        <option value="總表" selected>總表</option>
                         <option value="1A">１Ａ</option>
                         <option value="1B">１Ｂ</option>
                         <option value="1C">１Ｃ</option>
@@ -481,6 +504,7 @@
         ];
 
         const periodsNames = ["早自修", "第一節", "第二節", "第三節", "第四節", "第五節", "第六節", "第七節", "第八節"];
+        const dayMapShort = ["日", "一", "二", "三", "四", "五", "六"];
         const dayMap = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
 
         const teacherSchedules = {
@@ -549,8 +573,9 @@
             
             function update() {
                 const now = new Date();
-                const dayName = dayMap[now.getDay()];
-                const timeStr = now.toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit'});
+                const dayName = dayMapShort[now.getDay()];
+                // 採用 24小時制且不顯示秒數
+                const timeStr = now.toLocaleTimeString('zh-TW', {hour12: false, hour: '2-digit', minute:'2-digit'});
                 dtDisplay.innerText = `${now.getMonth()+1}/${now.getDate()} (${dayName}) ${timeStr}`;
                 
                 // 計算民國年週次
@@ -619,17 +644,15 @@
                 const text = `${cls.p} - ${cls.g} ${cls.s}`;
                 classSelect.add(new Option(text, index));
                 
-                // 自動比對目前時間
+                // 自動比對目前時間 (嚴格比對時間，若時間不對則不自動帶出名單)
                 if(isManualTeacherChange && cls.p === currentPeriod) {
                     autoSelectIndex = index + 1; // +1 因為第一個 option 是提示文字
                 }
             });
 
+            // 如果時間吻合，才自動選取該節課並展開名單
             if (autoSelectIndex !== -1) {
                 classSelect.selectedIndex = autoSelectIndex;
-            } else if (teacherSchedules[teacher][day].length === 1 && isManualTeacherChange) {
-                // 如果該老師今天只有一堂課，直接幫他選
-                classSelect.selectedIndex = 1; 
             }
 
             // 如果有選定課程，自動渲染學生
@@ -763,11 +786,13 @@
         function fetchRecords() {
             const groupMap = {"1A":"１Ａ", "1B":"１Ｂ", "1C":"１Ｃ", "2C":"２Ｃ", "跨D":"跨Ｄ", "視障":"視障"};
             const selectedWeek = document.getElementById('recWeek').value;
-            const selectedGroup = groupMap[document.getElementById('recGroup').value];
+            const selectedGroupRaw = document.getElementById('recGroup').value;
+            const selectedGroup = groupMap[selectedGroupRaw] || "總表";
 
+            // 先清空所有格子的內容
             periodsNames.forEach(p => {
                 ['星期一','星期二','星期三','星期四','星期五'].forEach(d => {
-                    document.getElementById(`cell-${p}-${d}`).innerHTML = '<span style="color:#E2E8F0;">-</span>';
+                    document.getElementById(`cell-${p}-${d}`).innerHTML = '';
                 });
             });
 
@@ -777,22 +802,50 @@
             .then(res => res.json())
             .then(data => {
                 document.getElementById('loadingOverlay').style.display = 'none';
-                const filtered = data.filter(r => r.week === selectedWeek && r.group === selectedGroup);
+                
+                // 依據是否選擇「總表」來過濾資料
+                const filtered = data.filter(r => r.week === selectedWeek && (selectedGroup === "總表" || r.group === selectedGroup));
                 
                 filtered.forEach(record => {
                     const cell = document.getElementById(`cell-${record.period}-${record.dayOfWeek}`);
                     if(cell) {
+                        // 使用 div 包裹每個紀錄，若總表有多筆可以整齊換行顯示
+                        let recordHtml = `<div style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed var(--border);">`;
+                        
+                        // 若為總表模式，顯示該筆紀錄是哪個組別
+                        if (selectedGroup === "總表") {
+                            recordHtml += `<div style="font-weight:700; color:var(--primary); font-size:0.85rem; margin-bottom:4px;">${record.group}</div>`;
+                        }
+
                         if (record.absentStudents === "全到") {
-                            cell.innerHTML = `<span class="status-all">全到</span><br><span style="font-size:0.75rem;color:var(--text-muted)">${record.subject}</span>`;
+                            recordHtml += `<span class="status-all">全到</span><br><span style="font-size:0.8rem;color:var(--text-muted);font-weight:500;">${record.subject}</span>`;
                         } else {
-                            // 將字串中的缺席和遲到上色
                             let displayHtml = record.absentStudents
                                 .replace(/缺席:/g, '<span class="highlight-absent">缺：</span>')
                                 .replace(/遲到:/g, '<br><span class="highlight-late">遲：</span>');
                             
-                            cell.innerHTML = `<span class="status-issue">${displayHtml}</span><br><span style="font-size:0.75rem;color:var(--text-muted)">${record.subject}</span>`;
+                            recordHtml += `<span class="status-issue">${displayHtml}</span><br><span style="font-size:0.8rem;color:var(--text-muted);font-weight:500;margin-top:4px;display:inline-block;">${record.subject}</span>`;
                         }
+                        recordHtml += `</div>`;
+                        
+                        cell.innerHTML += recordHtml;
                     }
+                });
+
+                // 收尾處理：如果格子是空的，填補「-」；如果格子有內容，把最後一個元素的虛線底線拿掉
+                periodsNames.forEach(p => {
+                    ['星期一','星期二','星期三','星期四','星期五'].forEach(d => {
+                        const cell = document.getElementById(`cell-${p}-${d}`);
+                        if(cell.innerHTML === '') {
+                            cell.innerHTML = '<span style="color:var(--border); font-weight:700;">-</span>';
+                        } else {
+                            if(cell.lastChild && cell.lastChild.style) {
+                                cell.lastChild.style.borderBottom = 'none';
+                                cell.lastChild.style.marginBottom = '0';
+                                cell.lastChild.style.paddingBottom = '0';
+                            }
+                        }
+                    });
                 });
             })
             .catch(err => {
