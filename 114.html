@@ -613,14 +613,22 @@
         }
 
         // 取得目前節次
-        function getCurrentPeriodStr() {
-            const now = new Date();
-            const mins = now.getHours() * 60 + now.getMinutes();
-            for(let p of periods) {
-                if(mins >= p.start && mins <= p.end) return p.name;
-            }
-            return null;
+function getCurrentPeriodStr() {
+    const now = new Date();
+    const mins = now.getHours() * 60 + now.getMinutes();
+    for(let p of periods) {
+        let startBuffer = p.start - 3; // 所有節次皆提前 3 分鐘
+        let endBuffer = p.end; 
+        
+        // 除了早自修以外，其餘節次往後延 5 分鐘
+        if (p.name !== "早自修") {
+            endBuffer = p.end + 5;
         }
+
+        if(mins >= startBuffer && mins <= endBuffer) return p.name;
+    }
+    return null;
+}
 
         // 更新課程選單與自動選取
         function updateClasses(isManualTeacherChange = false) {
