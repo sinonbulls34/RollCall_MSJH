@@ -543,8 +543,9 @@
             }
         };
 
-        let currentClassInfo = null;
+       let currentClassInfo = null;
         let autoCalculatedWeek = "";
+        const submittedRecords = new Set(); // 新增這行：用來記錄本次網頁開啟時，已經送出過點名的班級
 
         // 初始化
         window.onload = () => {
@@ -642,7 +643,10 @@ function getCurrentPeriodStr() {
             currentClassInfo = null;
 
             let day = new Date().getDay();
-            if (day === 0 || day === 6) day = 1; // 假日預設顯示星期一的課表以便測試
+        if (day === 0 || day === 6) {
+            classSelect.innerHTML = '<option value="">週末無課程安排</option>';
+            return;
+        }
 
             if (!teacher || !teacherSchedules[teacher] || !teacherSchedules[teacher][day]) return;
 
@@ -674,7 +678,7 @@ function getCurrentPeriodStr() {
         function renderStudents() {
             const teacher = document.getElementById('rcTeacher').value;
             let day = new Date().getDay();
-            if (day === 0 || day === 6) day = 1;
+        if (day === 0 || day === 6) return; // 週末不渲染學生
 
             const classIndex = document.getElementById('rcClass').value;
             const studentsArea = document.getElementById('studentsArea');
@@ -736,8 +740,7 @@ function getCurrentPeriodStr() {
                 statusStr = parts.join('；');
             }
 
-            let dayName = dayMap[new Date().getDay()];
-            if (new Date().getDay() === 0 || new Date().getDay() === 6) dayName = "星期一"; // 配合假日的防呆測試
+            let dayName = dayMap[new Date().getDay()]; // 已經移除了假日的測試碼
 
             const payload = {
                 week: autoCalculatedWeek,
@@ -749,7 +752,15 @@ function getCurrentPeriodStr() {
                 absentStudents: statusStr
             };
 
-            let confirmMsg = `送出後無法更改\n請再次確認 ${payload.group} ${payload.subject} 的點名紀錄。\n\n【點名結果】\n`;
+            // ✨ 新增防呆：檢查是否重複送出 (使用 週次_星期_節次_組別 作為唯一識別碼)
+            const recordKey = `${payload.week}_${payload.dayOfWeek}_${payload.period}_${payload.group}`;
+            if (submittedRecords.has(recordKey)) {
+                if (!confirm(`⚠️ 提醒：【${payload.group} ${payload.period}】已經有送出過點名紀錄了！\n\n您確定要再次重複送出嗎？`)) {
+                    return; // 如果老師按「取消」，就停止送出
+                }
+            }
+
+            let confirmMsg = `確認送出 ${payload.group} ${payload.subject} 的點名紀錄？\n\n【點名結果】\n`;
             confirmMsg += statusStr === "全到" ? "✅ 全班皆出席" : `⚠️ ${statusStr}`;
             
             if(!confirm(confirmMsg)) return;
@@ -765,6 +776,10 @@ function getCurrentPeriodStr() {
             .then(data => {
                 document.getElementById('loadingOverlay').style.display = 'none';
                 alert('🎉 點名紀錄已成功儲存！');
+                
+                // ✨ 新增這行：記錄這堂課已經送出過了
+                submittedRecords.add(recordKey);
+                
                 document.getElementById('rcTeacher').value = "";
                 updateClasses();
             })
