@@ -389,9 +389,9 @@
     </header>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('rollcall')">課堂點名</button>
-        <button class="tab-btn" onclick="switchTab('records')">缺席紀錄</button>
-        <button class="tab-btn" onclick="switchTab('stats')">次數統計</button>
+        <button class="tab-btn active" onclick="switchTab('rollcall')">點名</button>
+        <button class="tab-btn" onclick="switchTab('records')">紀錄</button>
+        <button class="tab-btn" onclick="switchTab('stats')">統計</button>
     </div>
 
     <div class="container">
@@ -412,7 +412,7 @@
                 <div class="form-group">
                     <label>授課教師</label>
                     <select id="rcTeacher" onchange="updateClasses(true)">
-                        <option value="">請選擇教師...</option>
+                        <option value="">請選擇教師</option>
                         <option value="黃婷珊">黃婷珊</option>
                         <option value="顏妤倢">顏妤倢</option>
                         <option value="劉貞成">劉貞成</option>
@@ -421,9 +421,9 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>選擇課程 (自動判定)</label>
+                    <label>選擇課程</label>
                     <select id="rcClass" onchange="renderStudents()">
-                        <option value="">請先選擇教師...</option>
+                        <option value="">請先選擇教師</option>
                     </select>
                 </div>
             </div>
@@ -432,13 +432,13 @@
                 <div class="attendance-header">
                     <div id="courseInfo" style="font-weight:700; font-size:1.1rem; color:var(--primary-hover);"></div>
                     <div class="legend">
-                        <div class="legend-item"><div class="dot present"></div>出席(未按)</div>
-                        <div class="legend-item"><div class="dot absent"></div>缺席(1次)</div>
-                        <div class="legend-item"><div class="dot late"></div>遲到(2次)</div>
+                        <div class="legend-item"><div class="dot present"></div>出席</div>
+                        <div class="legend-item"><div class="dot absent"></div>缺席</div>
+                        <div class="legend-item"><div class="dot late"></div>遲到</div>
                     </div>
                 </div>
                 <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px; font-weight: 500;">
-                    操作提示：預設為出席，點擊按鈕切換狀態 (1次:缺席 → 2次:遲到 → 3次:取消選取/出席)
+                    操作提示：預設為出席，點擊按鈕切換狀態 (1次:缺席 → 2次:遲到 → 3次:取消)
                 </div>
                 <div id="studentsArea" class="students-grid"></div>
                 <button class="submit-btn" id="submitBtn" onclick="submitRollCall()">送出點名紀錄</button>
