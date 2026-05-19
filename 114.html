@@ -353,6 +353,24 @@
         .highlight-late { color: var(--state-late-text); font-weight: 700;}
         .highlight-absent { color: var(--state-absent-text); font-weight: 700;}
 
+        /* 當週數據統計卡片樣式 */
+        .summary-box {
+            background: var(--bg-color);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 25px;
+        }
+        .summary-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
         /* 載入中遮罩 */
         #loadingOverlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -373,6 +391,7 @@
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('rollcall')">課堂點名</button>
         <button class="tab-btn" onclick="switchTab('records')">缺席紀錄</button>
+        <button class="tab-btn" onclick="switchTab('stats')">次數統計</button>
     </div>
 
     <div class="container">
@@ -402,7 +421,7 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>選擇課程</label>
+                    <label>選擇課程 (自動判定)</label>
                     <select id="rcClass" onchange="renderStudents()">
                         <option value="">請先選擇教師...</option>
                     </select>
@@ -413,13 +432,13 @@
                 <div class="attendance-header">
                     <div id="courseInfo" style="font-weight:700; font-size:1.1rem; color:var(--primary-hover);"></div>
                     <div class="legend">
-                        <div class="legend-item"><div class="dot present"></div>出席</div>
-                        <div class="legend-item"><div class="dot absent"></div>缺席</div>
-                        <div class="legend-item"><div class="dot late"></div>遲到</div>
+                        <div class="legend-item"><div class="dot present"></div>出席(未按)</div>
+                        <div class="legend-item"><div class="dot absent"></div>缺席(1次)</div>
+                        <div class="legend-item"><div class="dot late"></div>遲到(2次)</div>
                     </div>
                 </div>
                 <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px; font-weight: 500;">
-                    操作提示：預設為出席，點擊按鈕切換出席狀態 (1次:缺席 → 2次:遲到 → 3次:取消選取)
+                    操作提示：預設為出席，點擊按鈕切換狀態 (1次:缺席 → 2次:遲到 → 3次:取消選取/出席)
                 </div>
                 <div id="studentsArea" class="students-grid"></div>
                 <button class="submit-btn" id="submitBtn" onclick="submitRollCall()">送出點名紀錄</button>
@@ -456,6 +475,46 @@
                             <th>星期三</th>
                             <th>星期四</th>
                             <th>星期五</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+
+            <div id="weeklySummary"></div>
+        </div>
+
+        <div id="stats" class="card">
+            <div class="controls-row">
+                <div class="form-group">
+                    <label>選擇週次</label>
+                    <select id="statsWeek" onchange="fetchStats()">
+                        <option value="all">📊 全學期累計統計</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>選擇組別</label>
+                    <select id="statsGroup" onchange="fetchStats()">
+                        <option value="所有組別" selected>所有組別</option>
+                        <option value="1A">１Ａ</option>
+                        <option value="1B">１Ｂ</option>
+                        <option value="1C">１Ｃ</option>
+                        <option value="2C">２Ｃ</option>
+                        <option value="跨D">跨Ｄ</option>
+                        <option value="視障">視障</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table id="statsTable">
+                    <thead>
+                        <tr>
+                            <th>組別</th>
+                            <th>姓名</th>
+                            <th>缺席次數</th>
+                            <th>遲到次數</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -543,19 +602,15 @@
             }
         };
 
-       let currentClassInfo = null;
+        let currentClassInfo = null;
         let autoCalculatedWeek = "";
-        const submittedRecords = new Set(); // 新增這行：用來記錄本次網頁開啟時，已經送出過點名的班級
+        const submittedRecords = new Set(); 
 
         // 初始化
         window.onload = () => {
             initDateTimeAndWeek();
             initRecWeeks();
             generateRecordsTable();
-            
-            if (SCRIPT_URL.includes("YOUR_WEB_APP_URL") || SCRIPT_URL.includes("這裡貼上你的網址")) {
-                console.warn("未設定 SCRIPT_URL");
-            }
         };
 
         function switchTab(tabId) {
@@ -566,6 +621,7 @@
             event.target.classList.add('active');
 
             if(tabId === 'records') fetchRecords();
+            if(tabId === 'stats') fetchStats(); // 切換到次數統計時自動撈取數據
         }
 
         // 自動推算日期、時間、週次、星期
@@ -576,12 +632,10 @@
             function update() {
                 const now = new Date();
                 const dayName = dayMapShort[now.getDay()];
-                // 採用 24小時制且不顯示秒數
                 const timeStr = now.toLocaleTimeString('zh-TW', {hour12: false, hour: '2-digit', minute:'2-digit'});
                 dtDisplay.innerText = `${now.getMonth()+1}/${now.getDate()} (${dayName}) ${timeStr}`;
                 
-                // 計算民國年週次
-                autoCalculatedWeek = weeksData[0]; // 預設
+                autoCalculatedWeek = weeksData[0]; 
                 for(let w of weeksData) {
                     let m = w.match(/115\.(\d{2})\.(\d{2})~115\.(\d{2})\.(\d{2})/);
                     if(m) {
@@ -593,21 +647,26 @@
                         }
                     }
                 }
-                weekDisplay.innerText = autoCalculatedWeek.split(' ')[0]; // 只顯示 "第X週"
+                weekDisplay.innerText = autoCalculatedWeek.split(' ')[0]; 
             }
             update();
-            setInterval(update, 60000); // 每分鐘更新一次即可
+            setInterval(update, 60000); 
         }
 
         function initRecWeeks() {
             const recWeek = document.getElementById('recWeek');
-            weeksData.forEach(w => recWeek.add(new Option(w, w)));
+            const statsWeek = document.getElementById('statsWeek');
             
-            // 嘗試自動選擇目前週次
+            weeksData.forEach(w => {
+                recWeek.add(new Option(w, w));
+                statsWeek.add(new Option(w, w));
+            });
+            
             setTimeout(() => {
                 for(let i=0; i<recWeek.options.length; i++){
                     if(recWeek.options[i].value === autoCalculatedWeek) {
                         recWeek.selectedIndex = i;
+                        statsWeek.value = autoCalculatedWeek; // 次數統計預設也帶入當週
                         break;
                     }
                 }
@@ -615,22 +674,20 @@
         }
 
         // 取得目前節次
-function getCurrentPeriodStr() {
-    const now = new Date();
-    const mins = now.getHours() * 60 + now.getMinutes();
-    for(let p of periods) {
-        let startBuffer = p.start - 3; // 所有節次皆提前 3 分鐘
-        let endBuffer = p.end; 
-        
-        // 除了早自修以外，其餘節次往後延 5 分鐘
-        if (p.name !== "早自修") {
-            endBuffer = p.end + 5;
+        function getCurrentPeriodStr() {
+            const now = new Date();
+            const mins = now.getHours() * 60 + now.getMinutes();
+            for(let p of periods) {
+                let startBuffer = p.start - 3; 
+                let endBuffer = p.end; 
+                
+                if (p.name !== "早自修") {
+                    endBuffer = p.end + 5;
+                }
+                if(mins >= startBuffer && mins <= endBuffer) return p.name;
+            }
+            return null;
         }
-
-        if(mins >= startBuffer && mins <= endBuffer) return p.name;
-    }
-    return null;
-}
 
         // 更新課程選單與自動選取
         function updateClasses(isManualTeacherChange = false) {
@@ -643,10 +700,10 @@ function getCurrentPeriodStr() {
             currentClassInfo = null;
 
             let day = new Date().getDay();
-        if (day === 0 || day === 6) {
-            classSelect.innerHTML = '<option value="">週末無課程安排</option>';
-            return;
-        }
+            if (day === 0 || day === 6) {
+                classSelect.innerHTML = '<option value="">週末無課程安排</option>';
+                return;
+            }
 
             if (!teacher || !teacherSchedules[teacher] || !teacherSchedules[teacher][day]) return;
 
@@ -657,18 +714,14 @@ function getCurrentPeriodStr() {
                 const text = `${cls.p} - ${cls.g} ${cls.s}`;
                 classSelect.add(new Option(text, index));
                 
-                // 自動比對目前時間 (嚴格比對時間，若時間不對則不自動帶出名單)
                 if(isManualTeacherChange && cls.p === currentPeriod) {
-                    autoSelectIndex = index + 1; // +1 因為第一個 option 是提示文字
+                    autoSelectIndex = index + 1; 
                 }
             });
 
-            // 如果時間吻合，才自動選取該節課並展開名單
             if (autoSelectIndex !== -1) {
                 classSelect.selectedIndex = autoSelectIndex;
             }
-
-            // 如果有選定課程，自動渲染學生
             if(classSelect.selectedIndex > 0) {
                 renderStudents();
             }
@@ -678,7 +731,7 @@ function getCurrentPeriodStr() {
         function renderStudents() {
             const teacher = document.getElementById('rcTeacher').value;
             let day = new Date().getDay();
-        if (day === 0 || day === 6) return; // 週末不渲染學生
+            if (day === 0 || day === 6) return;
 
             const classIndex = document.getElementById('rcClass').value;
             const studentsArea = document.getElementById('studentsArea');
@@ -700,7 +753,7 @@ function getCurrentPeriodStr() {
             students.forEach(name => {
                 const btn = document.createElement('div');
                 btn.className = 'student-btn';
-                btn.dataset.state = "0"; // 預設 0=出席
+                btn.dataset.state = "0"; 
                 btn.innerText = name;
                 btn.onclick = () => toggleStudent(btn);
                 studentsArea.appendChild(btn);
@@ -710,7 +763,6 @@ function getCurrentPeriodStr() {
             document.getElementById('submitBtn').style.display = 'block';
         }
 
-        // 切換出缺席狀態 (0:出席, 1:缺席, 2:遲到)
         function toggleStudent(btn) {
             let state = parseInt(btn.dataset.state);
             state = (state + 1) % 3;
@@ -740,7 +792,7 @@ function getCurrentPeriodStr() {
                 statusStr = parts.join('；');
             }
 
-            let dayName = dayMap[new Date().getDay()]; // 已經移除了假日的測試碼
+            let dayName = dayMap[new Date().getDay()];
 
             const payload = {
                 week: autoCalculatedWeek,
@@ -752,11 +804,10 @@ function getCurrentPeriodStr() {
                 absentStudents: statusStr
             };
 
-            // ✨ 新增防呆：檢查是否重複送出 (使用 週次_星期_節次_組別 作為唯一識別碼)
             const recordKey = `${payload.week}_${payload.dayOfWeek}_${payload.period}_${payload.group}`;
             if (submittedRecords.has(recordKey)) {
                 if (!confirm(`⚠️ 提醒：【${payload.group} ${payload.period}】已經有送出過點名紀錄了！\n\n您確定要再次重複送出嗎？`)) {
-                    return; // 如果老師按「取消」，就停止送出
+                    return; 
                 }
             }
 
@@ -776,10 +827,7 @@ function getCurrentPeriodStr() {
             .then(data => {
                 document.getElementById('loadingOverlay').style.display = 'none';
                 alert('🎉 點名紀錄已成功儲存！');
-                
-                // ✨ 新增這行：記錄這堂課已經送出過了
                 submittedRecords.add(recordKey);
-                
                 document.getElementById('rcTeacher').value = "";
                 updateClasses();
             })
@@ -806,6 +854,26 @@ function getCurrentPeriodStr() {
             });
         }
 
+        // 解析出缺席字串的輔助函式
+        function parseAbsentStr(str) {
+            let absent = [];
+            let late = [];
+            if (!str || str === "全到") return { absent, late };
+            
+            let parts = str.split(/[；;]/);
+            parts.forEach(part => {
+                part = part.trim();
+                if (part.startsWith("缺席:")) {
+                    let names = part.replace("缺席:", "").split(",");
+                    absent = names.map(n => n.trim()).filter(n => n);
+                } else if (part.startsWith("遲到:")) {
+                    let names = part.replace("遲到:", "").split(",");
+                    late = names.map(n => n.trim()).filter(n => n);
+                }
+            });
+            return { absent, late };
+        }
+
         // 讀取缺席紀錄
         function fetchRecords() {
             const groupMap = {"1A":"１Ａ", "1B":"１Ｂ", "1C":"１Ｃ", "2C":"２Ｃ", "跨D":"跨Ｄ", "視障":"視障"};
@@ -813,7 +881,6 @@ function getCurrentPeriodStr() {
             const selectedGroupRaw = document.getElementById('recGroup').value;
             const selectedGroup = groupMap[selectedGroupRaw] || "總表";
 
-            // 先清空所有格子的內容
             periodsNames.forEach(p => {
                 ['星期一','星期二','星期三','星期四','星期五'].forEach(d => {
                     document.getElementById(`cell-${p}-${d}`).innerHTML = '';
@@ -827,16 +894,15 @@ function getCurrentPeriodStr() {
             .then(data => {
                 document.getElementById('loadingOverlay').style.display = 'none';
                 
-                // 依據是否選擇「總表」來過濾資料
                 const filtered = data.filter(r => r.week === selectedWeek && (selectedGroup === "總表" || r.group === selectedGroup));
                 
+                // 新增：統計當週特定學生的加總變數
+                let weeklyCounts = {};
+
                 filtered.forEach(record => {
                     const cell = document.getElementById(`cell-${record.period}-${record.dayOfWeek}`);
                     if(cell) {
-                        // 使用 div 包裹每個紀錄，若總表有多筆可以整齊換行顯示
                         let recordHtml = `<div style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed var(--border);">`;
-                        
-                        // 若為總表模式，顯示該筆紀錄是哪個組別
                         if (selectedGroup === "總表") {
                             recordHtml += `<div style="font-weight:700; color:var(--primary); font-size:0.85rem; margin-bottom:4px;">${record.group}</div>`;
                         }
@@ -851,12 +917,50 @@ function getCurrentPeriodStr() {
                             recordHtml += `<span class="status-issue">${displayHtml}</span><br><span style="font-size:0.8rem;color:var(--text-muted);font-weight:500;margin-top:4px;display:inline-block;">${record.subject}</span>`;
                         }
                         recordHtml += `</div>`;
-                        
                         cell.innerHTML += recordHtml;
                     }
+
+                    // 累加當週計算數據
+                    const parsed = parseAbsentStr(record.absentStudents);
+                    parsed.absent.forEach(name => {
+                        if (!weeklyCounts[name]) weeklyCounts[name] = { absent: 0, late: 0, group: record.group };
+                        weeklyCounts[name].absent++;
+                    });
+                    parsed.late.forEach(name => {
+                        if (!weeklyCounts[name]) weeklyCounts[name] = { absent: 0, late: 0, group: record.group };
+                        weeklyCounts[name].late++;
+                    });
                 });
 
-                // 收尾處理：如果格子是空的，填補「-」；如果格子有內容，把最後一個元素的虛線底線拿掉
+                // 渲染需求 1：課表最下方呈現當週累計次數
+                const summaryDiv = document.getElementById('weeklySummary');
+                let summaryHtml = `
+                    <div class="summary-box">
+                        <div class="summary-title">📊 本週出缺席累計（僅顯示有紀錄者，出席不計）</div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px;">
+                `;
+                let hasIssueData = false;
+                for (let name in weeklyCounts) {
+                    hasIssueData = true;
+                    summaryHtml += `
+                        <div style="background: var(--surface); padding: 12px; border-radius: 12px; border: 1px solid var(--border);">
+                            <span style="font-weight: 700; font-size:1.05rem;">${name}</span>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">(${weeklyCounts[name].group})</span>
+                            <div style="margin-top: 6px; font-size: 0.9rem;">
+                                ${weeklyCounts[name].absent > 0 ? `<span class="highlight-absent">缺席 <b>${weeklyCounts[name].absent}</b> 次</span>` : ''}
+                                ${weeklyCounts[name].absent > 0 && weeklyCounts[name].late > 0 ? ' │ ' : ''}
+                                ${weeklyCounts[name].late > 0 ? `<span class="highlight-late">遲到 <b>${weeklyCounts[name].late}</b> 次</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+                if(!hasIssueData) {
+                    summaryHtml += `<div style="color: var(--state-present-border); font-weight: 700; grid-column: 1/-1;">🎉 恭喜！本週此條件下所有學生皆全勤出席。</div>`;
+                }
+                summaryHtml += `</div></div>`;
+                summaryDiv.innerHTML = summaryHtml;
+
+                // 收尾表格格線
                 periodsNames.forEach(p => {
                     ['星期一','星期二','星期三','星期四','星期五'].forEach(d => {
                         const cell = document.getElementById(`cell-${p}-${d}`);
@@ -871,6 +975,87 @@ function getCurrentPeriodStr() {
                         }
                     });
                 });
+            })
+            .catch(err => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+                console.error(err);
+            });
+        }
+
+        // 需求 2：讀取與渲染「次數統計分頁」數據
+        function fetchStats() {
+            const groupMap = {"1A":"１Ａ", "1B":"１Ｂ", "1C":"１Ｃ", "2C":"２Ｃ", "跨D":"跨Ｄ", "視障":"視障"};
+            const selectedWeek = document.getElementById('statsWeek').value;
+            const selectedGroupRaw = document.getElementById('statsGroup').value;
+            const selectedGroup = groupMap[selectedGroupRaw] || "所有組別";
+
+            document.getElementById('loadingOverlay').style.display = 'flex';
+
+            fetch(SCRIPT_URL)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+                
+                // 1. 過濾週次
+                let filtered = data;
+                if (selectedWeek !== 'all') {
+                    filtered = data.filter(r => r.week === selectedWeek);
+                }
+                
+                // 2. 初始化花名冊（依據選擇的組別）
+                let statsMatrix = {};
+                for (let gKey in studentsData) {
+                    if (selectedGroup === "所有組別" || gKey === selectedGroup) {
+                        statsMatrix[gKey] = {};
+                        studentsData[gKey].forEach(name => {
+                            statsMatrix[gKey][name] = { absent: 0, late: 0 };
+                        });
+                    }
+                }
+
+                // 3. 統計數據填入矩陣
+                filtered.forEach(record => {
+                    const g = record.group;
+                    const parsed = parseAbsentStr(record.absentStudents);
+                    
+                    if (statsMatrix[g]) {
+                        parsed.absent.forEach(name => {
+                            if (statsMatrix[g][name]) statsMatrix[g][name].absent++;
+                        });
+                        parsed.late.forEach(name => {
+                            if (statsMatrix[g][name]) statsMatrix[g][name].late++;
+                        });
+                    }
+                });
+
+                // 4. 繪製前端表格 HTML
+                const tbody = document.querySelector('#statsTable tbody');
+                tbody.innerHTML = '';
+
+                let hasDataRows = false;
+                for (let g in statsMatrix) {
+                    for (let name in statsMatrix[g]) {
+                        hasDataRows = true;
+                        const item = statsMatrix[g][name];
+                        const tr = document.createElement('tr');
+                        
+                        // 畫龍點睛：次數大於 0 才套用色彩與粗體，0次則顯示淡灰色（出席不用呈現次數）
+                        const absentTd = item.absent > 0 ? `<td class="highlight-absent">${item.absent} 次</td>` : `<td style="color:#CBD5E1;">0 次</td>`;
+                        const lateTd = item.late > 0 ? `<td class="highlight-late">${item.late} 次</td>` : `<td style="color:#CBD5E1;">0 次</td>`;
+
+                        tr.innerHTML = `
+                            <td style="font-weight: 600; color: var(--text-muted);">${g}</td>
+                            <td style="font-weight: 700;">${name}</td>
+                            ${absentTd}
+                            ${lateTd}
+                        `;
+                        tbody.appendChild(tr);
+                    }
+                }
+
+                if (!hasDataRows) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted); padding:30px;">查無可統計的群組學生資料</td></tr>';
+                }
             })
             .catch(err => {
                 document.getElementById('loadingOverlay').style.display = 'none';
